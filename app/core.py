@@ -14,7 +14,7 @@ if databaseURL == None:
     password = environ.get("POSTGRES_PASSWORD")
     app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres:{}@{}/{}".format(password, uri, databaseName)
 else:
-    app.config["SQLALCHEMY_DATABASE_URI"] = databaseURL
+    app.config["SQLALCHEMY_DATABASE_URI"] = databaseURL.replace("postgres://", "postgresql://")
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
