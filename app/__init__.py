@@ -1,5 +1,5 @@
-from flask import Flask
+from app.core import app, db
+from app.controllers import *
+from app.database import *
 
-app = Flask(__name__)
-
-from app.controllers import  *
+db.create_all()

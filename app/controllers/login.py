@@ -1,8 +1,6 @@
-from app import app
-from app.models.user import User
+from app import app, db
 
 
-@app.route('/login', methods=['GET'])
+@app.route("/register", methods=["POST"])
 def login():
-    user = User()
-    return "login {}".format(user.getNama())
+    return "register"
