@@ -14,6 +14,7 @@ def user_identity_lookup(user):
 @jwt.user_lookup_loader
 def user_lookup_callback(_jwt_header, jwt_data):
     identity = jwt_data["sub"]
+
     return User.query.filter_by(email=identity).one_or_none()
 
 
@@ -34,7 +35,7 @@ def register():
             }
         except sqlalchemy.exc.IntegrityError as e:
             return {
-                "msg": "username is already exists",
+                "msg": "user is already exists",
             }, 400
     else:
         return {
@@ -78,8 +79,8 @@ def userInfo():
 def refreshToken():
     identity = get_jwt_identity()
     user = User.query.where(User.email == identity).first()
-
     access_token = create_access_token(identity=user)
+
     return {
-        "access_token": access_token
+        "access_token": access_token,
     }
