@@ -4,6 +4,8 @@ from app import app, db, jwt
 from app.database import User
 from flask import request
 from flask_jwt_extended import jwt_required, current_user, create_access_token, get_jwt_identity, create_refresh_token
+from hashlib import sha256
+from os import environ
 
 
 @jwt.user_identity_loader
@@ -23,6 +25,12 @@ def register():
     req = request.get_json()
 
     if type(req) == dict:
+        jwt_secret_key = environ.get("JWT_SECRET_KEY")
+        if req["hash"] != sha256(jwt_secret_key.encode() + req["email"].encode()).hexdigest():
+            return {
+                "msg": "email and hash is not match",
+            }, 422
+
         user = User(req["email"], req["hash"], req["level"])
 
         try:
@@ -36,7 +44,7 @@ def register():
         except sqlalchemy.exc.IntegrityError as e:
             return {
                 "msg": "user is already exists",
-            }, 400
+            }, 422
     else:
         return {
             "msg": "invalid request input",
