@@ -1,8 +1,9 @@
+from flask_jwt_extended.utils import create_refresh_token
 import sqlalchemy
 from app import app, db, jwt
 from app.database import User
 from flask import request
-from flask_jwt_extended import jwt_required, current_user, create_access_token
+from flask_jwt_extended import jwt_required, current_user, create_access_token, get_jwt_identity, create_refresh_token
 
 
 @jwt.user_identity_loader
@@ -50,9 +51,8 @@ def login():
 
         if user != None:
             return {
-                "email": user.email,
-                "level": user.level,
                 "access_token": create_access_token(identity=user),
+                "refresh_token": create_refresh_token(identity=user),
             }
         else:
             return {
@@ -70,4 +70,16 @@ def userInfo():
     return {
         "email": current_user.email,
         "level": current_user.level,
+    }
+
+
+@app.route("/user/refresh_token", methods=["POST"], strict_slashes=False)
+@jwt_required(refresh=True)
+def refreshToken():
+    identity = get_jwt_identity()
+    user = User.query.where(User.email == identity).first()
+
+    access_token = create_access_token(identity=user)
+    return {
+        "access_token": access_token
     }
