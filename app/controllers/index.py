@@ -15,9 +15,9 @@ def reset():
         db.create_all()
 
         return {
-            "message": "the database has been successfully reset"
+            "msg": "the database has been successfully reset"
         }, 403
     else:
         return {
-            "message": "you're not allowed to do this operation"
+            "msg": "you're not allowed to do this operation"
         }, 403

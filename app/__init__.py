@@ -1,3 +1,3 @@
-from app.core import app, db
+from app.core import app, db, jwt
 from app.controllers import *
 from app.database import *
