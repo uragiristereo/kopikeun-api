@@ -1,83 +1,127 @@
-from app import app, db, jwt
-from app.database import User
+from werkzeug.datastructures import MultiDict
+from app import app, db
+from app.database import Favorite, User
 from flask import request
 from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import jwt_required, current_user, create_access_token, get_jwt_identity, create_refresh_token
 from hashlib import sha256
 from os import environ
 
+from app.helper import format_exception
+
 
 @app.route("/user/register", methods=["POST"], strict_slashes=False)
 def register():
-    req = request.get_json()
-
-    if type(req) == dict:
+    try:
+        form = request.form.to_dict()
+        email = form["email"]
+        hash_str = form["hash"]
         jwt_secret_key = environ.get("JWT_SECRET_KEY")
-        hash = sha256(jwt_secret_key.encode() + req["email"].encode()).hexdigest()
+        hash = sha256(jwt_secret_key.encode() + email.encode()).hexdigest()
 
-        if req["hash"] != hash:
+        if hash_str != hash:
             return {
                 "msg": "email and hash is not match",
+                "data": None,
             }, 422
 
-        user = User(req["email"], req["hash"], req["level"])
+        user = User(
+            email=email,
+            hash=hash_str,
+            level="customer",
+        )
 
         try:
             db.session.add(user)
             db.session.commit()
 
             return {
-                "email": user.email,
-                "level": user.level,
+                "msg": "success",
+                "data": {
+                    "email": user.email,
+                    "level": user.level,
+                },
             }
-        except IntegrityError as e:
+        except IntegrityError:
             return {
                 "msg": "user is already exists",
             }, 422
-    else:
+    except BaseException as e:
         return {
-            "msg": "invalid request input",
+            "msg": format_exception(e, __file__),
         }, 400
 
 
 @app.route("/user/login", methods=["POST"], strict_slashes=False)
 def login():
-    req = request.get_json()
+    try:
+        form = request.form.to_dict()
+        email = form["email"]
+        hash_str = form["hash"]
 
-    if type(req) == dict:
-        user = User.query.where((User.email == req["email"]) & (User.hash == req["hash"])).first()
+        print(type(User.email))
+
+        user = User.query.where((User.email == email) & (User.hash == hash_str)).first()
 
         if user != None:
             return {
-                "access_token": create_access_token(identity=user),
-                "refresh_token": create_refresh_token(identity=user),
+                "msg": "success",
+                "data": {
+                    "access_token": create_access_token(identity=user),
+                    "refresh_token": create_refresh_token(identity=user),
+                },
             }
         else:
             return {
                 "msg": "invalid email or hash",
             }, 401
-    else:
+    except BaseException as e:
         return {
-            "msg": "invalid request input",
+            "msg": format_exception(e, __file__),
         }, 400
 
 
-@app.route("/user/info", methods=["POST"], strict_slashes=False)
+@app.route("/user/info", methods=["GET"], strict_slashes=False)
 @jwt_required()
-def userInfo():
+def get_user_info():
     return {
-        "email": current_user.email,
-        "level": current_user.level,
+        "msg": "success",
+        "data": {
+            "email": current_user.email,
+            "level": current_user.level,
+        },
     }
 
 
-@app.route("/user/refresh_token", methods=["POST"], strict_slashes=False)
+@app.route("/user/refresh_token", methods=["GET"], strict_slashes=False)
 @jwt_required(refresh=True)
-def refreshToken():
+def refresh_token():
     identity = get_jwt_identity()
     user = User.query.where(User.email == identity).first()
     access_token = create_access_token(identity=user)
 
     return {
-        "access_token": access_token,
+        "msg": "success",
+        "data": {
+            "access_token": access_token,
+        },
+    }
+
+
+@app.route("/user/favorites", methods=["GET"], strict_slashes=False)
+@jwt_required()
+def get_favorites():
+    identity = get_jwt_identity()
+    favorites = Favorite.query.where(Favorite.user_email == identity).all()
+    data = []
+
+    for favorite in favorites:
+        data.append({
+            "id": favorite.id,
+            "cafe_id": favorite.cafe_id,
+        })
+
+    return {
+        "msg": "success",
+        "data": data,
     }

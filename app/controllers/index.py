@@ -17,7 +17,7 @@ def reset():
 
         return {
             "msg": "the database has been successfully reset"
-        }, 403
+        }
     else:
         return {
             "msg": "you're not allowed to do this operation"
